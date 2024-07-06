@@ -1,4 +1,4 @@
-import { FileDown, Filter, Loader2, Plus, Search } from 'lucide-react'
+import { FileDown, Filter, Loader2, MoreHorizontal, Plus, Search } from 'lucide-react'
 import { Header } from './components/header'
 import { Tabs } from './components/tabs'
 import { Button } from './components/ui/button'
@@ -8,6 +8,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { FormEvent, useState } from 'react'
 import { Control, Input } from './components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table'
+import { Pagination } from './components/pagination'
 
 export interface TagResponse {
   first: number
@@ -33,11 +35,12 @@ export function App() {
   const [filter, setFilter] = useState(urlFilter)
 
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1
+  const perPage = searchParams.get('per_page') ? Number(searchParams.get('per_page')) : 10
 
   const { data: tagsResponse, isLoading, isFetching } = useQuery<TagResponse>({
-    queryKey: ['get-tags', urlFilter, page],
+    queryKey: ['get-tags', urlFilter, page, perPage],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=10&title=${urlFilter}`)
+      const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=${perPage}&title=${urlFilter}`)
       const data = await response.json()
 
       return data
@@ -50,6 +53,7 @@ export function App() {
 
     setSearchParams(params => {
       params.set('page', '1')
+      params.set('per_page', '10')
       params.set('filter', filter)
 
       return params
@@ -119,6 +123,51 @@ export function App() {
             Export
           </Button>
         </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead></TableHead>
+              <TableHead>Tag</TableHead>
+              <TableHead>Amount of videos</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {
+              tagsResponse?.data.map((tag) => {
+                return (
+                  <TableRow key={tag.id}>
+                    <TableCell></TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{tag.title}</span>
+                        <span className="text-xs text-zinc-500">{tag.slug}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xinc-300">
+                      {tag.amountOfVideos} video(s)
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="icon">
+                        <MoreHorizontal className="size=4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            }
+          </TableBody>
+        </Table>
+
+        {
+          tagsResponse &&
+          <Pagination
+            pages={tagsResponse.pages}
+            items={tagsResponse.items}
+            page={page}
+          />
+        }
       </main>
     </div>
   )
